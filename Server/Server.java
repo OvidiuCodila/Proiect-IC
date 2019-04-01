@@ -5,7 +5,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 
-public class Server 
+public class Server extends Thread
 {
 	//Server connection variables
 	private int port = 1700;
@@ -18,22 +18,27 @@ public class Server
 	//Server running variables
 	private boolean running = true;
 	
+	//Server design variable
+	private ServerDesign sg;
 	
-	//Server Threads variables
-	private CommandInput cmd;
+	
+	public Server(ServerDesign sg)
+	{
+		this.sg = sg;
+	}
 	
 	
 	////////////////////////////////////////////////////////////////////////////////
 	// Server running functions
 	///////////////////////////////////////////////////////////////////////////////
 	
-	public void runServer()
+	public void run()
 	{
+		this.initMemory();
+		this.printStatus("Starting server...");
+		
 		openServerSocket();
 		clients = new ArrayList<ServerWorker>();
-		
-		cmd = new CommandInput(this);
-		cmd.start();
 		
 		while(running)
 		{
@@ -124,17 +129,12 @@ public class Server
 		saveMemory();
 		this.printStatus("Memory saved succesfully");
 		
-		this.printStatus("Closing command input...");
-		cmd.closeCmdInp();
-		this.printStatus("Command input close succesfully");
-		
 		try
 		{ serverSocket.close(); }
 		catch(Exception e)
 		{ e.printStackTrace(); }
 		
 		this.printStatus("Server closed\n");
-		System.exit(1);
 	}
 	
 	private void saveMemory()
@@ -144,37 +144,12 @@ public class Server
 	
 	
 	////////////////////////////////////////////////////////////////////////////////
-	// Server commands functions
-	///////////////////////////////////////////////////////////////////////////////
-	public void showConnected()
-	{
-		System.out.println("Connected clients: ");
-		if(clients.size() > 0)
-			for(int i=0; i<clients.size(); i++)
-				System.out.println("\t - " + clients.get(i).getClientName());
-		else System.out.println("\t - no connected clients");
-	}
-	
-	
-	////////////////////////////////////////////////////////////////////////////////
-	// Server debugging
+	// Server status update
 	///////////////////////////////////////////////////////////////////////////////
 	
-	public void printStatus(String message)
+	public synchronized void printStatus(String message)
 	{
+		sg.editTextArea(message);
 		System.out.println(message);
-	}
-	
-	
-	////////////////////////////////////////////////////////////////////////////////
-	// Main function
-	///////////////////////////////////////////////////////////////////////////////
-	public static void main(String argv[])
-	{
-		Server server = new Server();
-		
-		server.initMemory();
-		server.printStatus("Starting server...");
-		server.runServer();
 	}
 }

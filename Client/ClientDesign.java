@@ -2,6 +2,8 @@ package Client;
 
 import java.io.FileInputStream;
 
+
+import javafx.scene.paint.Color;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -11,7 +13,6 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
 public class ClientDesign extends Application
@@ -24,8 +25,9 @@ public class ClientDesign extends Application
 	private Scene makeReservationScene;
 	private Scene manageReservationScene;
 	private Scene hotelDetails;
+	private Scene confirmReservation;
 	
-	enum Scenes { Menu, MakeReservation, ManageReservation, HotelDetails };
+	enum Scenes { Menu, MakeReservation, ManageReservation, HotelDetails, ConfirmReservation };
 	
 	// the client
 	private Client client;
@@ -46,6 +48,7 @@ public class ClientDesign extends Application
 		makeReservationScene = new Scene(createScene(Scenes.MakeReservation), 1024, 768);
 		manageReservationScene = new Scene(createScene(Scenes.ManageReservation), 1024, 768);
 		hotelDetails = new Scene(createScene(Scenes.HotelDetails), 1024, 768);
+		confirmReservation = new Scene(createScene(Scenes.ConfirmReservation), 1024, 768);
 		
 		// assign each scene a stylesheet page
 		css = this.getClass().getResource("/styleSheetMenu.css").toExternalForm();
@@ -56,6 +59,8 @@ public class ClientDesign extends Application
 		manageReservationScene.getStylesheets().add(css);
 		css = this.getClass().getResource("/styleSheetHotelDetails.css").toExternalForm();
 		hotelDetails.getStylesheets().add(css);
+		css = this.getClass().getResource("/styleSheetConfirmReservation.css").toExternalForm();
+		confirmReservation.getStylesheets().add(css);
 		
 		// set current scene
 		setCurrentScene(Scenes.Menu);
@@ -92,6 +97,11 @@ public class ClientDesign extends Application
 				break;
 			}
 			
+			case ConfirmReservation: {
+				mainWindow.setScene(confirmReservation);
+				break;
+			}
+			
 			default: {
 				System.out.println("Error! Wrong scene!!");
 				break;
@@ -107,14 +117,7 @@ public class ClientDesign extends Application
 	private BorderPane createScene(Scenes scene)
 	{
 		BorderPane pane = new BorderPane();
-		HBox hboxUp = new HBox();
-		HBox hboxDown = new HBox();
 		
-		hboxUp.getStyleClass().add("hboxUp");
-		hboxDown.getStyleClass().add("hboxDown");
-		
-		pane.setTop(hboxUp);
-		pane.setBottom(hboxDown);
 		switch(scene)
 		{
 			case Menu: {
@@ -131,6 +134,10 @@ public class ClientDesign extends Application
 			}
 			case HotelDetails: {
 				pane.setCenter(addHotelDetailsGridPane());
+				break;
+			}
+			case ConfirmReservation: {
+				pane.setCenter(addConfirmReservationGridPane());
 				break;
 			}
 			default: {
@@ -211,12 +218,12 @@ public class ClientDesign extends Application
 		final Label leaveDate = new Label();
 		leaveDate.setText("Leaving Date: ");
 		leaveDate.getStyleClass().add("presetLabel");
-		grid.add(leaveDate, 8, 4, 3, 1);
+		grid.add(leaveDate, 5, 7, 3, 1);
 		
 		final Label nrPersons = new Label();
 		nrPersons.setText("Places (max 4): ");
 		nrPersons.getStyleClass().add("presetLabel");
-		grid.add(nrPersons, 11, 4, 3, 1);
+		grid.add(nrPersons, 9, 4, 3, 1);
 		
 		//TextFields for input
 		final TextField arriveDay = new TextField();
@@ -237,17 +244,160 @@ public class ClientDesign extends Application
 		final TextField pplNr = new TextField();
 		pplNr.setPromptText("Nr");
 		pplNr.getStyleClass().add("pplNrTextField");
-		grid.add(pplNr, 8, 5);
+		grid.add(pplNr, 9, 5);
+		
+		final TextField leaveDay = new TextField();
+		leaveDay.setPromptText("DD");
+		leaveDay.getStyleClass().add("dayTextField");
+		grid.add(leaveDay, 5, 8);
+		
+		final TextField leaveMonth = new TextField();
+		leaveMonth.setPromptText("MM");
+		leaveMonth.getStyleClass().add("monthTextField");
+		grid.add(leaveMonth, 6, 8);
+		
+		final TextField leaveYear = new TextField();
+		leaveYear.setPromptText("YYYY");
+		leaveYear.getStyleClass().add("yearTextField");
+		grid.add(leaveYear, 7, 8);
 		
 		
-		//RadioButtons for available options
+		//Search Result label
+		final Label resultLabel = new Label();
+		resultLabel.setText(" ");
+		resultLabel.getStyleClass().add("resultLabel");
+		grid.add(resultLabel, 7, 10, 3, 1);
 		
 		
 		//Buttons
+		final Button searchButton = new Button();
+		searchButton.setText("Search");
+		searchButton.getStyleClass().add("otherButtons");
+		grid.add(searchButton, 7, 13);
 		
+		final Button backButton = new Button();
+		backButton.setText("Back");
+		backButton.getStyleClass().add("backButton");
+		grid.add(backButton, 8, 13);
+		
+		final Button reserveButton = new Button();
+		reserveButton.setText("Reserve");
+		reserveButton.getStyleClass().add("otherButtons");
+		grid.add(reserveButton, 9, 13);
 		
 		//Button Actions
+		searchButton.setOnAction(e -> {
+			resultLabel.setText("Avem locuri disponibile");
+			resultLabel.setTextFill(Color.GREEN);
+		});
 		
+		backButton.setOnAction(e -> {
+			setCurrentScene(Scenes.Menu);
+		});
+		
+		reserveButton.setOnAction(e -> {
+			setCurrentScene(Scenes.ConfirmReservation);
+		});
+		
+		return grid;
+	}
+	
+	private GridPane addConfirmReservationGridPane()
+	{
+		GridPane grid = new GridPane();
+		grid.getStyleClass().add("gridConfirmReserv");
+		
+		//Description labels
+		final Label name = new Label();
+		name.setText("Name: ");
+		name.getStyleClass().add("standardLabel");
+		grid.add(name, 5, 5);
+		
+		final Label cnp = new Label();
+		cnp.setText("CNP: ");
+		cnp.getStyleClass().add("standardLabel");
+		grid.add(cnp, 5, 6);
+		
+		final Label email = new Label();
+		email.setText("Email: ");
+		email.getStyleClass().add("standardLabel");
+		grid.add(email, 5, 7);
+		
+		final Label phone = new Label();
+		phone.setText("Phone: ");
+		phone.getStyleClass().add("standardLabel");
+		grid.add(phone, 5, 8);
+		
+		final Label address = new Label();
+		address.setText("Address: ");
+		address.getStyleClass().add("standardLabel");
+		grid.add(address, 5, 9);
+		
+		final Label cardNr = new Label();
+		cardNr.setText("Card Nr: ");
+		cardNr.getStyleClass().add("standardLabel");
+		grid.add(cardNr, 5, 10);
+		
+		final Label cvv = new Label();
+		cvv.setText("CVV: ");
+		cvv.getStyleClass().add("standardLabel");
+		grid.add(cvv, 5, 11);
+		
+		//Text Fields
+		final TextField nameField = new TextField();
+		nameField.setPromptText("Enter name here");
+		nameField.getStyleClass().add("standardField");
+		grid.add(nameField, 6, 5, 2, 1);
+		
+		final TextField cnpField = new TextField();
+		cnpField.setPromptText("Enter cnp here");
+		cnpField.getStyleClass().add("standardField");
+		grid.add(cnpField, 6, 6, 2, 1);
+		
+		final TextField emailField = new TextField();
+		emailField.setPromptText("Enter email here");
+		emailField.getStyleClass().add("standardField");
+		grid.add(emailField, 6, 7, 2, 1);
+		
+		final TextField phoneField = new TextField();
+		phoneField.setPromptText("Enter phone here");
+		phoneField.getStyleClass().add("standardField");
+		grid.add(phoneField, 6, 8, 2, 1);
+		
+		final TextField addressField = new TextField();
+		addressField.setPromptText("Enter address here");
+		addressField.getStyleClass().add("standardField");
+		grid.add(addressField, 6, 9, 2, 1);
+		
+		final TextField cardNrField = new TextField();
+		cardNrField.setPromptText("Enter card number here");
+		cardNrField.getStyleClass().add("standardField");
+		grid.add(cardNrField, 6, 10, 2, 1);
+		
+		final TextField cvvField = new TextField();
+		cvvField.setPromptText("Enter cvv here");
+		cvvField.getStyleClass().add("standardField");
+		grid.add(cvvField, 6, 11, 2, 1);
+		
+		//Buttons
+		final Button backButton = new Button();
+		backButton.setText("Back");
+		backButton.getStyleClass().add("backButton");
+		grid.add(backButton, 6, 12);
+		
+		final Button reserveButton = new Button();
+		reserveButton.setText("Reserve");
+		reserveButton.getStyleClass().add("reserveButton");
+		grid.add(reserveButton, 7, 12);
+		
+		//Buttons actions
+		backButton.setOnAction(e -> {
+			setCurrentScene(Scenes.MakeReservation);
+		});
+		
+		reserveButton.setOnAction(e -> {
+			//nothing yet
+		});
 		
 		return grid;
 	}

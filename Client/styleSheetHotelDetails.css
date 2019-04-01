@@ -1,0 +1,49 @@
+.gridHotelDetails {
+	-fx-background-image: url('allOtherPagesBG2.jpg');
+	-fx-background-size: stretch;
+	-fx-background-position: top left;
+    -fx-hgap: 30;
+    -fx-vgap: 30;
+}
+
+.labelText {
+    -fx-text-fill: white;
+    -fx-font-family: "Arial";
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+}
+
+.headerText {
+    -fx-text-fill: white;
+    -fx-font-family: "Comic Sans MS";
+    -fx-font-size: 25px;
+    -fx-font-weight: bold;
+}
+
+.backButton {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0,1,2,3;
+    -fx-background-radius: 3,2,2,2;
+    -fx-padding: 12 30 12 30;
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-font-family: "Comic Sans MS";
+    -fx-min-width: 120;
+    -fx-min-height: 40;
+    -fx-font-size: 20px;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-border-width: 1px;
+    -fx-border-color: #2e2e2f;
+    -fx-border-radius: 14;
+}
+
+.backButton Text {
+    -fx-effect: dropshadow( one-pass-box , rgba(0,0,0,0.8) , 0, 0.0 , 0 , 1);
+}
+
+.backButton:hover {
+    -fx-background-color: -fx-shadow-highlight-color, -fx-outer-border, -fx-inner-border, -fx-body-color;
+    -fx-text-fill: black;
+    -fx-background-radius: 14;
+}

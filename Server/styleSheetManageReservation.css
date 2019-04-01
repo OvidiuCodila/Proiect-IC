@@ -1,0 +1,65 @@
+.gridManageReservation {
+	-fx-background-image: url('serverManageBg.jpg');
+	-fx-background-size: stretch;
+	-fx-background-position: top left;
+    -fx-hgap: 30;
+    -fx-vgap: 30;
+}
+
+.eventsList {
+    -fx-text-fill: black;
+    -fx-font-family: "Arial";
+    -fx-font-size: 18px;
+    -fx-font-weight: normal;
+	-fx-pref-height: 550px;
+	-fx-pref-width: 300px;
+	-fx-border-width: 3px;
+    -fx-border-color: #42c8f4;
+    -fx-border-radius: 14;
+	-fx-background-radius: 18;
+}
+
+.detailsField {
+    -fx-text-fill: black;
+    -fx-font-family: "Arial";
+    -fx-font-size: 18px;
+    -fx-font-weight: normal;
+	-fx-pref-height: 400px;
+	-fx-pref-width: 450px;
+	-fx-border-width: 3px;
+    -fx-border-color: #42c8f4;
+    -fx-border-radius: 10;
+	-fx-background-radius: 10;
+}
+
+.Btn {
+    -fx-background-color: 
+        #000000,
+        linear-gradient(#2d4d6b, #1f325e),
+        linear-gradient(#20355e, #152240),
+        linear-gradient(#1f325c, #0f192f);
+    -fx-background-insets: 0,1,2,3;
+    -fx-background-radius: 3,2,2,2;
+    -fx-padding: 12 30 12 30;
+    -fx-font-family: "Arial";
+    -fx-text-weight: bold;
+    -fx-text-fill: white;
+    -fx-font-size: 22px;
+    -fx-min-width: 100;
+    -fx-min-height: 40;
+    -fx-max-width: 130;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+}
+
+.Btn Text {
+    -fx-effect: dropshadow( one-pass-box , rgba(0,0,0,0.8) , 0, 0.0 , 0 , 1);
+}
+
+.Btn:hover {
+    -fx-background-color: 
+        #000000,
+        linear-gradient(#7ebcea, #2f4b8f),
+        linear-gradient(#426ab7, #263e75),
+        linear-gradient(#395cab, #223768);
+}
