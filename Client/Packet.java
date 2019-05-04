@@ -1,9 +1,9 @@
 package Client;
 
+import Client.Client.PACKET_TYPE;
+
 public class Packet 
 {
-	private enum PACKET_TYPE { Authentication, AuthenticationAccepted, RezervationRequest, RezervationAccepted, RezervationDenied, InguiryRooms, InquiryRoomsResult };
-	
 	private PACKET_TYPE type;
 	private int length;
 	private String data;

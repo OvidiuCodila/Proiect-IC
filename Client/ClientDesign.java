@@ -1,18 +1,24 @@
 package Client;
 
 import java.io.FileInputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Optional;
+import java.util.regex.Pattern;
 
-
-import javafx.scene.paint.Color;
 import javafx.application.Application;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 public class ClientDesign extends Application
@@ -31,6 +37,7 @@ public class ClientDesign extends Application
 	
 	// the client
 	private Client client;
+	
 	
 	public static void main(String argv[])
 	{
@@ -66,13 +73,23 @@ public class ClientDesign extends Application
 		setCurrentScene(Scenes.Menu);
 		
 		// start the client
-		client = new Client("Ion" + Math.random() *10);
-		client.start();
+		client = new Client();
+		
+		try
+		{
+			client.startClient();
+		}
+		catch(MyConnectionException e)
+		{
+			alertBox("ERROR","We're sorry!",e.getMessage(),AlertType.ERROR);
+			client.closeConnection();
+		}
 	}
 	
 	//////////////////////////////////////////////////////////////////
 	//Method for setting the scene
 	//////////////////////////////////////////////////////////////////
+	
 	private void setCurrentScene(Scenes scene)
 	{
 		switch(scene)
@@ -114,6 +131,7 @@ public class ClientDesign extends Application
 	//////////////////////////////////////////////////////////////////
 	//Methods for creating the design to each scene along with designing the elements from the scenes
 	//////////////////////////////////////////////////////////////////
+	
 	private BorderPane createScene(Scenes scene)
 	{
 		BorderPane pane = new BorderPane();
@@ -182,7 +200,6 @@ public class ClientDesign extends Application
 		// Exit Button Function
 		exitButton.setOnAction(e -> {
 			client.clientExitAction();
-			System.exit(1);
 		});
 		
 		//Hotel Details Button Function
@@ -273,29 +290,76 @@ public class ClientDesign extends Application
 		final Button searchButton = new Button();
 		searchButton.setText("Search");
 		searchButton.getStyleClass().add("otherButtons");
-		grid.add(searchButton, 7, 13);
+		grid.add(searchButton, 7, 14);
 		
 		final Button backButton = new Button();
 		backButton.setText("Back");
 		backButton.getStyleClass().add("backButton");
-		grid.add(backButton, 8, 13);
+		grid.add(backButton, 8, 14);
 		
 		final Button reserveButton = new Button();
 		reserveButton.setText("Reserve");
 		reserveButton.getStyleClass().add("otherButtons");
-		grid.add(reserveButton, 9, 13);
+		reserveButton.setDisable(true);
+		grid.add(reserveButton, 9, 14);
 		
 		//Button Actions
 		searchButton.setOnAction(e -> {
-			resultLabel.setText("Avem locuri disponibile");
-			resultLabel.setTextFill(Color.GREEN);
+			String dateIn = gtTxt(arriveDay) + "." + gtTxt(arriveMonth) + "." + gtTxt(arriveYear);
+			String dateOut = gtTxt(leaveDay) + "." + gtTxt(leaveMonth) + "." + gtTxt(leaveYear);
+			
+			try 
+			{
+				int persCount = Integer.parseInt(gtTxt(pplNr));
+				int dayIn = Integer.parseInt(gtTxt(arriveDay));
+				int dayOut = Integer.parseInt(gtTxt(leaveDay));
+				int monthIn = Integer.parseInt(gtTxt(arriveMonth));
+				int monthOut = Integer.parseInt(gtTxt(leaveMonth));
+				int yearIn = Integer.parseInt(gtTxt(arriveYear));
+				int yearOut = Integer.parseInt(gtTxt(leaveYear));
+				
+				if(checkDatesAndPersCount(dayIn,dayOut,monthIn,monthOut,yearIn,yearOut,persCount))
+				{
+					int rez = client.searchRoom(dateIn, dateOut, persCount);
+					if( rez == -1 ) 
+					{
+						reserveButton.setDisable(true);
+						resultLabel.setTextFill(Color.RED);
+						resultLabel.setText("Nu exista locuri disponibile! \n \tNe pare rau!");
+					}
+					else
+					{
+						reserveButton.setDisable(false);
+						resultLabel.setTextFill(Color.GREEN);
+						resultLabel.setText("Avem locuri disponibile. Total: " + rez);
+					}
+				}
+			} 
+			catch(NumberFormatException err)
+			{
+				alertBox("ERROR","The following errors have occured:","One or more fields is empty!",AlertType.ERROR);
+			}
+			catch(MyConnectionException err)
+			{
+				alertBox("ERROR","We're sorry!",err.getMessage(),AlertType.ERROR);
+				client.closeConnection();
+			}
+			catch(MyCommunicationException err)
+			{
+				alertBox("ERROR","We're sorry!",err.getMessage(),AlertType.ERROR);
+			}
 		});
 		
 		backButton.setOnAction(e -> {
+			resultLabel.setText("");
+			arriveYear.clear(); arriveMonth.clear(); arriveDay.clear();
+			leaveYear.clear(); leaveMonth.clear(); leaveDay.clear();
+			pplNr.clear();
 			setCurrentScene(Scenes.Menu);
 		});
 		
 		reserveButton.setOnAction(e -> {
+			resultLabel.setText("");
 			setCurrentScene(Scenes.ConfirmReservation);
 		});
 		
@@ -396,7 +460,46 @@ public class ClientDesign extends Application
 		});
 		
 		reserveButton.setOnAction(e -> {
-			//nothing yet
+			String nameTxt, cnpTxt, emailTxt, phoneTxt, addressTxt, cardNrTxt, cvvTxt;
+			nameTxt = gtTxt(nameField);
+			cnpTxt = gtTxt(cnpField);
+			emailTxt = gtTxt(emailField);
+			phoneTxt = gtTxt(phoneField);
+			addressTxt = gtTxt(addressField);
+			cardNrTxt = gtTxt(cardNrField);
+			cvvTxt = gtTxt(cvvField);
+			
+			try
+			{
+				if(checkUserData(nameTxt,cnpTxt,emailTxt,phoneTxt, cardNrTxt,cvvTxt))
+				{
+					if(confirmAlert("Confirm action","Are you sure you want to submit the reservation?"))
+					{
+						int rez = client.makeReservation(nameTxt,cnpTxt,emailTxt,phoneTxt,addressTxt,cardNrTxt,cvvTxt);
+						if(rez == -1)
+						{
+							alertBox("ERROR", "Following errors have occured:", "Reservation failed! Please try again",AlertType.ERROR);
+						}
+						else
+						{
+							System.out.println(rez);
+							alertBox("SUCCES","Reservation code: ","-> " + rez,AlertType.INFORMATION);
+							nameField.clear(); cnpField.clear(); emailField.clear(); phoneField.clear(); addressField.clear();
+							cardNrField.clear(); cvvField.clear();
+							setCurrentScene(Scenes.Menu);
+						}
+					}
+				}
+			}
+			catch(MyConnectionException err)
+			{
+				alertBox("ERROR","We're sorry!",err.getMessage(),AlertType.ERROR);
+				client.closeConnection();
+			}
+			catch(MyCommunicationException err)
+			{
+				alertBox("ERROR","We're sorry!",err.getMessage(),AlertType.ERROR);
+			}
 		});
 		
 		return grid;
@@ -408,7 +511,7 @@ public class ClientDesign extends Application
 		
 		grid.getStyleClass().add("gridManageReserv");
 		
-		//Description Lables -----------------------------------------//
+		//Description Labels -----------------------------------------//
 		final Label nameLabel = new Label();
 		nameLabel.setText("Name: ");
 		nameLabel.getStyleClass().add("presetLabel");
@@ -479,6 +582,7 @@ public class ClientDesign extends Application
 		final Button deleteBtn = new Button();
 		deleteBtn.setText("Delete");
 		deleteBtn.getStyleClass().add("otherButtons");
+		deleteBtn.setDisable(true);
 		grid.add(deleteBtn, 8, 12);
 		
 		final Button searchBtn = new Button();
@@ -510,17 +614,80 @@ public class ClientDesign extends Application
 		});
 		
 		deleteBtn.setOnAction(e -> {
-			//
+			if(confirmAlert("Confirm Action:", "Are you sure you want to delete your reservation?!"))
+			{
+				try
+				{
+					int result = client.deleteReservation(name.getText().trim(), code.getText().trim());
+					if(result == 1)
+					{
+						alertBox("SUCCES", "", "Reservation deleted succesfully!",AlertType.CONFIRMATION);
+						name.clear(); code.clear();
+						
+						statusLabelText.setText("");
+						cnpLabelText.setText("");
+						phoneLabelText.setText("");
+						emailLabelText.setText("");
+						dateLabelText.setText("");
+						
+						setCurrentScene(Scenes.Menu);
+					}
+					else
+					{
+						alertBox("ERROR!", "Following errors have occured:","Failed to delete reservation! Please try again",AlertType.ERROR);
+					}
+				}
+				catch(MyConnectionException err)
+				{
+					alertBox("ERROR","We're sorry!",err.getMessage(),AlertType.ERROR);
+					client.closeConnection();
+				}
+				catch(MyCommunicationException err)
+				{
+					alertBox("ERROR","We're sorry!",err.getMessage(),AlertType.ERROR);
+				}
+			}
 		});
 		
 		searchBtn.setOnAction(e -> {
 			if(!name.getText().trim().equals("") && !code.getText().trim().equals(""))
 			{
-				statusLabelText.setText("Rezervation Made");
-				cnpLabelText.setText("1931022054050");
-				phoneLabelText.setText("0771993765");
-				emailLabelText.setText("cineva.altcineva@gmail.com");
-				dateLabelText.setText("date1 - date2");
+				try
+				{
+					String details = client.checkResrvation(name.getText().trim(), code.getText().trim());
+					String[] detailsParts = details.split("/");
+					
+					statusLabelText.setText("");
+					cnpLabelText.setText("");
+					phoneLabelText.setText("");
+					emailLabelText.setText("");
+					dateLabelText.setText("");
+					
+					deleteBtn.setDisable(false);
+					
+					statusLabelText.setText(detailsParts[0]);
+					if(detailsParts.length > 1)
+					{
+						cnpLabelText.setText(detailsParts[1]);
+						phoneLabelText.setText(detailsParts[3]);
+						emailLabelText.setText(detailsParts[2]);
+						dateLabelText.setText(detailsParts[4]);
+					}
+					else alertBox("ERROR","","Reservation not found! Please try again",AlertType.ERROR);
+				}
+				catch(MyConnectionException err)
+				{
+					alertBox("ERROR","We're sorry!",err.getMessage(),AlertType.ERROR);
+					client.closeConnection();
+				}
+				catch(MyCommunicationException err)
+				{
+					alertBox("ERROR","We're sorry!",err.getMessage(),AlertType.ERROR);
+				}
+			}
+			else
+			{
+				alertBox("ERROR","The following errors have occured:","Please fill in all the fields!",AlertType.ERROR);
 			}
 		});
 		
@@ -620,5 +787,163 @@ public class ClientDesign extends Application
 		grid.getStyleClass().add("gridHotelDetails");
 		
 		return grid;
+	}
+	
+	//////////////////////////////////////////////////////////////////
+	//Methods for input checking
+	//////////////////////////////////////////////////////////////////
+	
+	private boolean checkDatesAndPersCount(int dayIn, int dayOut, int monthIn, int monthOut, int yearIn, int yearOut, int persCount)
+	{
+		int foundError = 0;
+		String errorMessage = "";
+		
+		if(persCount < 1 || persCount > 4)
+		{
+			foundError = 1;
+			errorMessage += "Incorrect number of persons!" + System.getProperty("line.separator");
+		}
+		
+		// check for no negative numbers
+		if(dayIn < 1 || dayOut < 1 || monthIn < 1 || monthOut < 1 || yearIn < 1 || yearOut < 1)
+		{
+			foundError = 1;
+			errorMessage += "Date values cant be below 1!" + System.getProperty("line.separator");
+		}
+		// check month value
+		if(monthIn > 12 || monthOut > 12)
+		{
+			foundError = 1;
+			errorMessage += "Month can be more than 12!" + System.getProperty("line.separator");
+		}
+		// check leave dat to be after arrive date
+		if(yearOut < yearIn || ((yearIn == yearOut) && monthOut < monthIn) || ((yearIn == yearOut) && (monthIn == monthOut) && dayOut <= dayIn))
+		{
+			foundError = 1;
+			errorMessage += "Leave date must be after arrive date!" + System.getProperty("line.separator");
+		}
+		// check days number
+		if((monthIn == 2 && dayIn > 29) || (monthOut == 2 && dayOut > 29) || dayOut > 31 || dayIn > 31)
+		{
+			foundError = 1;
+			errorMessage += "Day value is too big!" + System.getProperty("line.separator");
+		}
+		
+		if(foundError == 0)
+		{
+			// check arrive date to not be before current date
+			int arriveDate = (yearIn * 100 + monthIn) * 100 + dayIn;
+			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+			Date currentDt = new Date();
+			Date arriveDt = null;
+			
+			try {
+				arriveDt = dateFormat.parse(String.valueOf(arriveDate));
+			}catch(Exception e) { System.out.println("Error parsing th date"); }
+			
+			if(arriveDt.before(currentDt))
+			{
+				foundError = 1;
+				errorMessage += "Arrive date cant be before current date!" + System.getProperty("line.separator");
+			}
+		}
+		
+		if(foundError == 1)
+		{
+			alertBox("ERROR","The following errors have occured:",errorMessage,AlertType.ERROR);
+			return false;
+		}
+		
+		return true;
+	}
+	
+	private boolean checkUserData(String name, String cnp, String email, String phone, String cardNr, String cvv)
+	{
+		int foundError = 0;
+		String errorMessage = "";
+		
+		if(name.isEmpty() || cnp.isEmpty() || email.isEmpty() || phone.isEmpty() || cardNr.isEmpty() || cvv.isEmpty())
+		{
+			foundError = 1;
+			errorMessage += "One or more fields are empty!" + System.getProperty("line.separator");
+		}
+			
+		if(!Pattern.compile( "[a-zA-Z ]+" ).matcher( name ).matches())
+		{
+			foundError = 1;
+			errorMessage += "Names can only have letters!" + System.getProperty("line.separator");
+		}
+		if(cnp.length() != 13 || !Pattern.compile( "[0-9]+" ).matcher( cnp ).matches())
+		{
+			foundError = 1;
+			errorMessage += "Incorrect cnp format!" + System.getProperty("line.separator");
+		}
+		if(phone.length() != 10 || !Pattern.compile( "[0-9]+" ).matcher( phone ).matches())
+		{
+			foundError = 1;
+			errorMessage += "Incorrect phone number format!" + System.getProperty("line.separator");
+		}
+		if(!Pattern.compile("^[\\w!#$%&'*+/=?`{|}~^-]+(?:\\.[\\w!#$%&'*+/=?`{|}~^-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,6}$").matcher(email).matches())
+		{
+			foundError = 1;
+			errorMessage += "Incorrect email format!" + System.getProperty("line.separator");
+		}
+		if(!Pattern.compile("[0-9]+").matcher(cardNr).matches())
+		{
+			foundError = 1;
+			errorMessage += "Incorrect card number format!" + System.getProperty("line.separator");
+		}
+		if(cvv.length() != 3 || !Pattern.compile("[0-9]+").matcher(cvv).matches())
+		{
+			foundError = 1;
+			errorMessage += "Incorrect cvv number format!" + System.getProperty("line.separator");
+		}
+		
+		if(foundError == 1)
+		{
+			alertBox("ERROR","The following errors have occured:",errorMessage,AlertType.ERROR);
+			return false;
+		}
+		return true;
+	}
+	
+	//////////////////////////////////////////////////////////////////
+	//Methods for alert message boxes
+	//////////////////////////////////////////////////////////////////
+	
+	private boolean confirmAlert(String title, String message)
+	{
+		Alert alert = new Alert(AlertType.CONFIRMATION);
+		alert.setTitle(title);
+		alert.setHeaderText("");
+		alert.setContentText(message);
+
+		Optional<ButtonType> result = alert.showAndWait();
+		if (result.get() == ButtonType.OK)
+		{
+		    return true;
+		}
+		else 
+		{
+		    return false;
+		}
+	}
+	
+	private void alertBox(String title, String header, String message, AlertType type)
+	{
+		Alert alert = new Alert(type);
+		alert.setTitle(title);
+		alert.setHeaderText(header);
+		alert.setContentText(message);
+		alert.showAndWait();
+	}
+	
+	//////////////////////////////////////////////////////////////////
+	//Other helping methods
+	//////////////////////////////////////////////////////////////////
+	
+	private String gtTxt(TextField tf)
+	{
+		return tf.getText().trim();
 	}
 }

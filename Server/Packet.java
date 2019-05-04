@@ -1,10 +1,10 @@
 package Server;
 
 
+import Server.ServerWorker.PACKET_TYPE;
+
 public class Packet 
 {
-	private enum PACKET_TYPE { Authentication, AuthenticationAccepted, AuthenticationDenied, Rezervation, RezervationAccepted, RezervationDenied, InguiryRooms, ResultInquirtyRooms };
-	
 	private PACKET_TYPE type;
 	private int length;
 	private String data;

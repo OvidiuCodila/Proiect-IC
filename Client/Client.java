@@ -1,15 +1,18 @@
 package Client;
 
 import java.io.DataOutputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
+
+import javafx.application.Platform;
+
 import java.net.ConnectException;
-import java.util.Scanner;
 
 
-public class Client extends Thread
+public class Client
 {
 	//Connection variables
 	private Socket socket;
@@ -18,24 +21,14 @@ public class Client extends Thread
 	
 	//Communication variables
 	private DataOutputStream bw;
-	private ClientListener cl;
-	private Scanner scn;
+	private DataInputStream br;
 	
-	//Running variables
-	private boolean running;
-	private String sendMessage;
+	//Packet variables
+	protected enum PACKET_TYPE {ReservationStatus, ReservationRequest, AvailableRoomInquiry, DeleteReservation, Exit};
+	private Packet packet;
+
 	
-	//Testing variables
-	private String name;
-	
-	
-	public Client(String name)
-	{
-		this.name = name;
-		running = true;
-	}
-	
-	public void run()
+	public void startClient()
 	{
 		try
  		{
@@ -45,77 +38,100 @@ public class Client extends Thread
  			
  			socket = new Socket(address, port);
  			
- 			initWrite();
- 			scn = new Scanner(System.in);
- 			
- 			cl = new ClientListener(socket, this);
- 			cl.start();
- 			
- 			bw.writeUTF(name);	
-			while(running && cl.isListenerClose())
-			{
-				try { sendMessage = scn.nextLine(); }
-				catch(Exception e) { sendMessage = null; }
-					
-				if(sendMessage != null)
-				{
-					bw.writeUTF(sendMessage);
-					bw.flush();
-						
-					System.out.println("Message sent to server: " + sendMessage);
-				}
-					
-				if(sendMessage.equals("Exit") || sendMessage == null)
-						running = false;
-			}
-			
-			if(cl.isListenerClose())
-				cl.closeListener();
+ 			initCommunication();
  		}
 		catch(ConnectException e)
 		{
-			System.out.println("Connection refused. Server might not be online right now!");
-			//e.printStackTrace();
+			throw new MyConnectionException("Connection refused. Server might not be online right now!");
 		}
 		catch(SocketException e)
 		{
-			System.out.println("Ooops! Seems the server has closed! We are sorry!");
+			throw new MyConnectionException("Ooops! Seems the server has closed! We are sorry!");
+		}
+		catch(MyConnectionException e)
+		{
+			throw new MyConnectionException(e.getMessage());
 		}
  		catch(Exception e)
  		{
- 			System.out.println("Error starting the client");
- 			e.printStackTrace();
+ 			throw new MyConnectionException("Error starting the client");
  		}
-		finally
-		{
-			if( scn != null ) scn.close();
-		}
 	}
 	
-	private void initWrite()
+	private void sendPacket()
+	{
+		String sendMessage = "";
+		
+		sendMessage += packet.getPacketType() + "-" + packet.getPacketLength() + "-" + packet.getPacketData();
+		
+		try 
+		{
+			bw.writeUTF(sendMessage);
+		}
+		catch (SocketException e)
+		{
+			throw new MyConnectionException("Ooops! Connection was lost! Action not completed!");
+		}
+		catch (IOException e) 
+		{
+			throw new MyCommunicationException("Error sending packet");
+		}
+		
+		packet = null;
+	}
+	
+	private String recvPacket()
+	{
+		String recvMessage;
+		
+		try 
+		{
+			recvMessage = br.readUTF();
+		}
+		catch (SocketException e)
+		{
+			recvMessage = null;
+			throw new MyConnectionException("Ooops! Connection was lost! Action not completed!");
+		}
+		catch (IOException e) 
+		{
+			throw new MyCommunicationException("Error reading packet");
+		}
+		
+		return recvMessage;
+	}
+	
+	private void initCommunication()
 	{
 		try
 		{
 			bw = new DataOutputStream(socket.getOutputStream());
+			br = new DataInputStream(socket.getInputStream());
 		}
 		catch(IOException e)
 		{
-			System.out.println("Error at initializing the client writing\n");
-			e.printStackTrace();
+			throw new MyConnectionException("Error starting communication channels!");
 		}
 	}
 	
-	public synchronized void clientExitAction()
+	public void clientExitAction()
 	{
-		running = false;
-		if(cl != null) cl.closeListener();
+		packet = new Packet();
+		
+		packet.setPacketType(PACKET_TYPE.Exit);
+		packet.setPacketLength(0);
+		packet.setPacketData("0");
+		
+		this.sendPacket();
+		this.closeConnection();
 	}
 	
-	public synchronized void closeConnection()
+	public void closeConnection()
 	{
 		try
 		{
 			if(bw != null) this.bw.close();
+			if(br != null) this.br.close();
 			if(socket != null) socket.close();
 		}
 		catch(IOException e)
@@ -124,13 +140,115 @@ public class Client extends Thread
 			e.printStackTrace();
 		}
 		
-		if(sendMessage == null || sendMessage.equals("Exit"))
-			System.out.println("You have disconnected from the server\n");
-		else
+		System.out.println("You have been succesfully disconnected from the server\n");
+		Platform.exit();
+	}
+	
+	public int searchRoom(String dateIn, String dateOut, int personCount)
+	{
+		String recvMessage;
+		
+		packet = new Packet();
+		
+		packet.setPacketType(PACKET_TYPE.AvailableRoomInquiry);
+		packet.setPacketLength(3);
+		packet.setPacketData(dateIn + "/" + dateOut + "/" + personCount);
+		
+		try
 		{
-			System.out.println("Oops! It seems the server has closed! We are sorry for the inconvenience!");
-			System.out.println("You have been succesfully disconnected from the server\n");
+			this.sendPacket();
+			recvMessage = this.recvPacket();
 		}
-		System.exit(1);
+		catch(MyConnectionException e)
+		{
+			throw new MyConnectionException(e.getMessage());
+		}
+		catch(MyCommunicationException e)
+		{
+			throw new MyCommunicationException(e.getMessage());
+		}
+		
+		return Integer.parseInt(recvMessage);
+	}
+	
+	public int makeReservation(String name, String cnp, String email, String phone, String address, String cardNr, String cvv)
+	{
+		String recvMessage;
+		
+		packet = new Packet();
+		
+		packet.setPacketType(PACKET_TYPE.ReservationRequest);
+		packet.setPacketLength(8);
+		packet.setPacketData(name + "/" + cnp + "/" + email + "/" + phone + "/" + address + "/" + cardNr + "/" + cvv);
+		
+		try
+		{
+			this.sendPacket();
+			recvMessage = this.recvPacket();
+		}
+		catch(MyConnectionException e)
+		{
+			throw new MyConnectionException(e.getMessage());
+		}
+		catch(MyCommunicationException e)
+		{
+			throw new MyCommunicationException(e.getMessage());
+		}
+				
+		return Integer.parseInt(recvMessage);
+	}
+	
+	public String checkResrvation(String name, String code)
+	{
+		String recvMessage;
+		
+		packet = new Packet();
+		
+		packet.setPacketType(PACKET_TYPE.ReservationStatus);
+		packet.setPacketLength(2);
+		packet.setPacketData(name + "/" + code);
+		
+		try
+		{
+			this.sendPacket();
+			recvMessage = this.recvPacket();
+		}
+		catch(MyConnectionException e)
+		{
+			throw new MyConnectionException(e.getMessage());
+		}
+		catch(MyCommunicationException e)
+		{
+			throw new MyCommunicationException(e.getMessage());
+		}
+		
+		return recvMessage;
+	}
+	
+	public int deleteReservation(String name, String code)
+	{
+		String recvMessage;
+		
+		packet = new Packet();
+		
+		packet.setPacketType(PACKET_TYPE.DeleteReservation);
+		packet.setPacketLength(2);
+		packet.setPacketData(name + "/" + code);
+		
+		try
+		{
+			this.sendPacket();
+			recvMessage = this.recvPacket();
+		}
+		catch(MyConnectionException e)
+		{
+			throw new MyConnectionException(e.getMessage());
+		}
+		catch(MyCommunicationException e)
+		{
+			throw new MyCommunicationException(e.getMessage());
+		}
+		
+		return Integer.parseInt(recvMessage);
 	}
 }
