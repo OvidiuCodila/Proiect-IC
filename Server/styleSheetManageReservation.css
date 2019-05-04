@@ -4,9 +4,23 @@
 	-fx-background-position: top left;
     -fx-hgap: 30;
     -fx-vgap: 30;
+    -fx-padding: 10;
 }
 
-.eventsList {
+.standardField {
+    -fx-text-fill: black;
+    -fx-font-family: "Arial";
+    -fx-font-size: 20px;
+    -fx-font-weight: normal;
+    -fx-pref-column-count: 20;
+    -fx-border-width: 2px;
+    -fx-border-color: #42c8f4;
+    -fx-border-radius: 14;
+	-fx-background-radius: 18;
+
+}
+
+.reservList {
     -fx-text-fill: black;
     -fx-font-family: "Arial";
     -fx-font-size: 18px;
