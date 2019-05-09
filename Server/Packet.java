@@ -10,6 +10,7 @@ public class Packet
 	private String data;
 	
 	
+	// getters and setter for the packet fields
 	public void setPacketType(PACKET_TYPE type)
 	{
 		this.type = type;

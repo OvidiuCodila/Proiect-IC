@@ -6,6 +6,7 @@ public class MyConnectionException extends RuntimeException
 
 	public MyConnectionException(String message)
 	{
+		// custom made RunTime exception
 		super(message);
 	}
 }

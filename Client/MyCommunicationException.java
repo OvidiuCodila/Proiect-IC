@@ -6,6 +6,7 @@ public class MyCommunicationException extends RuntimeException
 
 	public MyCommunicationException(String message)
 	{
+		// custom made RunTime exception
 		super(message);
 	}
 }
