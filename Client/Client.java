@@ -7,8 +7,6 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 
-import javafx.application.Platform;
-
 import java.net.ConnectException;
 
 
@@ -147,7 +145,7 @@ public class Client
 		}
 		
 		System.out.println("You have been succesfully disconnected from the server\n");
-		Platform.exit(); // closing the application
+		System.exit(1); // closing the application
 	}
 	
 	public int searchRoom(String dateIn, String dateOut, int personCount)

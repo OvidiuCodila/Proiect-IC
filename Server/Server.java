@@ -15,7 +15,6 @@ import java.util.Date;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import javafx.application.Platform;
 import javafx.scene.control.ListView;
 
 public class Server extends Thread
@@ -401,7 +400,7 @@ public class Server extends Thread
 		this.printStatus(" ");
 		logs.close(); // closing the logs folder
 		
-		Platform.exit(); // closing the application
+		System.exit(1); // closing the application
 	}
 	
 	private void saveMemory()
@@ -471,7 +470,6 @@ public class Server extends Thread
 	////////////////////////////////////////////////////////////////////////////////
 	// Server reservations managing functions
 	///////////////////////////////////////////////////////////////////////////////
-	
 	
 	//---------- Client Requests ----------//
 	
@@ -580,7 +578,7 @@ public class Server extends Thread
 				}
 			}
 		
-		return 0; // 0 is returned on fail
+		return -1; // -1 is returned on fail
 	}
 	
 	private int getRandCode()
@@ -594,7 +592,7 @@ public class Server extends Thread
 		return nr;
 	}
 	
-	private boolean codeExists(int code)
+	public boolean codeExists(int code)
 	{
 		int i;
 		// checking the generated code doesnt exist between the already generated and still available codes

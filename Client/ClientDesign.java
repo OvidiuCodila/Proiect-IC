@@ -885,7 +885,7 @@ public class ClientDesign extends Application
 	//Methods for input checking
 	//////////////////////////////////////////////////////////////////
 	
-	private boolean checkDatesAndPersCount(int dayIn, int dayOut, int monthIn, int monthOut, int yearIn, int yearOut, int persCount)
+	public boolean checkDatesAndPersCount(int dayIn, int dayOut, int monthIn, int monthOut, int yearIn, int yearOut, int persCount)
 	{
 		int foundError = 0; // foundError is set to 0 initially and if an error is found it becomes 1
 		String errorMessage = ""; // in errorMessage we add all the error message that appear
@@ -949,7 +949,7 @@ public class ClientDesign extends Application
 		return true;
 	}
 	
-	private boolean checkUserData(String name, String cnp, String email, String phone, String cardNr, String cvv)
+	public boolean checkUserData(String name, String cnp, String email, String phone, String cardNr, String cvv)
 	{
 		int foundError = 0;
 		String errorMessage = "";
